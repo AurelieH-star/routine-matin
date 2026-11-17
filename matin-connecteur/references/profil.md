@@ -6,46 +6,59 @@ Tout ce que les prompts d'extraction et de rédaction disent « de vous » vient
 fichier.
 
 ```yaml
-prenom: ""            # ex. Camille — utilisé dans le brief (« Bonjour Camille »)
-nom_complet: ""       # ex. Camille Durand
-role: ""              # ex. responsable communication, PME de 40 personnes
-organisation: ""      # ex. Durand & Fils
-boite: ""             # l'adresse lue et destinataire du mail du matin
-fournisseur: ""       # m365 | gmail — détecté d'après les outils présents
+prenom: "Aurélie"
+nom_complet: "Aurélie Hennetier"
+role: "responsable communication et événementiels"
+organisation: "Procivis UES-AP, tête de réseau du réseau coopératif Procivis"
+boite: "aurelie.hennetier@procivis.fr"
+fournisseur: "m365"
 fuseau: "Europe/Paris"
-heure_mail: "07:00"   # heure à laquelle vous voulez lire le mail
+heure_mail: "07:30"
 
-# Ce que le connecteur sait faire, constaté au premier lancement (outils présents).
 capacites:
-  envoi_mail: false        # outlook_send_mail ou send_message présent
-  brouillon: false         # outlook_create_draft ou create_draft présent
-  piece_jointe: false      # Gmail : oui ; Microsoft 365 : non
-  depot_fichier: false     # sharepoint_upload_file présent (lien OneDrive pour le MP3)
-  agenda: false            # outlook_calendar_search ou connecteur Google Calendar
+  envoi_mail: true         # outlook_send_mail présent, Mail.Send consenti (vérifié le 17/11/2026)
+  brouillon: true          # outlook_create_draft présent
+  piece_jointe: false      # Microsoft 365 : jamais
+  depot_fichier: true      # sharepoint_upload_file présent, Files.ReadWrite.All consenti
+  agenda: true             # outlook_calendar_search présent
 
-# Vos grands projets ou thèmes. Chaque tâche est rangée dans l'un d'eux ; ils
-# deviennent les filtres de la page. Cinq à dix, pas plus ; « Divers » est ajouté.
 projets:
-  - ""
-  - ""
+  - "Newsletter réseau"
+  - "Vœux 2027"
+  - "Immolympiades 2027"
+  - "Sortie de Noël de l'équipe"
+  - "Relations presse et partenariats"
+  - "Comité communication PLS"
+  - "Baromètre 2027"
+  - "Site et marque"
 
-# Les personnes que vous côtoyez tous les jours (prénom seul dans le brief) et les
-# externes réguliers (prénom + société). Facultatif, améliore le brief.
+# Interlocuteurs les plus réguliers, d'après les mails envoyés du 27/10 au 17/11/2026.
 proches:
-  - ""
+  - "Hélène Dürlewanger, directrice logement social et partenariats"
+  - "Maxime Taillebois, chef de projets communication"
+  - "Danièle Ephestion"
+  - "Guillaume Macher, directeur général"
+  - "Franck Petit, directeur maîtrise d'ouvrage"
+  - "Jérôme Verdin"
+  - "Angélique Pouvesle"
+  - "Adrien Chaussinand"
 externes:
-  - ""   # ex. Séverine, agence Yumens
+  - "Stéphanie, Papiers de Soi (mise en page de la newsletter)"
+  - "Caroline Courteau, Velux (Living Places)"
+  - "Marie-Belle Parseghian, AirZen Radio"
+  - "Julien Potereau, Toluna Harris Interactive (Baromètre)"
+  - "Laura Lerible, Autour des Saveurs (traiteur des vœux)"
+  - "Émilie Voegeli, Binéo (partenaire Immolympiades)"
+  - "Anne-Flore Telfils, Cision"
+  - "Stéphane Sautier, Valrim"
 
-# Expéditeurs et objets à ignorer en plus de references/bruit.md.
 bruit:
-  expediteurs: []
-  objets: []
+  expediteurs: ["lefigaro.fr", "batiactu.com", "immoweek.fr", "newstank.fr", "infopro-digital.com", "strategies.fr", "fpifrance.fr", "clic-cctp.com", "jvweb.fr", "teamresa.com", "airzen.fr/no-reply", "scanner@procivis.fr", "dialog.procivis.fr"]
+  objets: ["Synthèse quotidienne des réactions", "Info du jour", "Le 13 H de l'Immobilier", "Les titres du"]
 
-# Jours fériés à respecter (le brief ne part pas) : code pays ou liste de dates.
 feries: "FR"
 
-# Page claude.ai de la to-do, créée au premier lancement. Ne change jamais.
-artefact_url: ""
+artefact_url: "https://claude.ai/artifact/SQnb6Pjy5GfTouu1e3Zxy1"
 ```
 
 Règles :
@@ -59,3 +72,9 @@ Règles :
   qu'il a lu, la personne corrige, la liste est écrite ici.
 - Ce fichier est committé dans le dépôt de la personne : il ne contient ni mot de
   passe ni clé, seulement ce qu'un collègue sait déjà.
+
+## Notes de l'adaptateur (premier lancement, 17/11/2026)
+
+- `outlook_email_search` avec `folderName: "Sent Items"` + `afterDateTime` : liste les envoyés, 25 par page, pagination par `offset`.
+- Boîte de réception très chargée (environ 1 500 mails en trois semaines, surtout des newsletters) : pour les reçus, filtrer avec `sender: "procivis.fr"` + `folderName: "Inbox"` + `afterDateTime`, puis une recherche sans filtre d'expéditeur sur la fenêtre courte de la routine.
+- L'agenda renvoie les heures en « Romance Standard Time » (heure de Paris).

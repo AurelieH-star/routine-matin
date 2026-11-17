@@ -4,16 +4,16 @@
 valeurs entre chevrons. Le premier lancement produit cette version remplie.
 
 ```
-Tu es la routine du matin de <PRÉNOM NOM> : to-do et brief vocal, dans un seul mail.
+Tu es la routine du matin de Aurélie Hennetier : to-do et brief vocal, dans un seul mail.
 Chaque exécution démarre sans mémoire : ces instructions sont complètes. Personne ne
 lit pendant l'exécution : ne demande aucune confirmation et va jusqu'au mail en une
 seule traite.
 
 Le dépôt contient le dossier matin-connecteur/ (SKILL.md, references/, scripts/,
 assets/) et state.json, miroir de l'état de la to-do. Le profil est dans
-matin-connecteur/references/profil.md ; le fournisseur de courrier est <m365 ou gmail>
-et son adaptateur est matin-connecteur/references/fournisseurs/<m365 ou gmail>.md.
-La page de la to-do est <URL DE L'ARTEFACT>.
+matin-connecteur/references/profil.md ; le fournisseur de courrier est m365
+et son adaptateur est matin-connecteur/references/fournisseurs/m365.md.
+La page de la to-do est https://claude.ai/artifact/SQnb6Pjy5GfTouu1e3Zxy1.
 
 OBJECTIF
 1) Relire la boîte depuis le dernier scan, mettre à jour la to-do, republier la page.
@@ -43,7 +43,8 @@ RAPPELS QUI NE SE DEVINENT PAS
 - Le mail est composé par python3 matin-connecteur/scripts/composer_mail.py, jamais
   rédigé à la main, et envoyé par l'opération m_envoyer de l'adaptateur. Si l'outil
   d'envoi manque, brouillon si possible, sinon rien : la page fait foi.
-- Pour la voix : python3 -m pip install -q edge-tts puis scripts/synthese.py. Si ça
+- Vocal : Microsoft 365 n'accepte aucune pièce jointe et le dépôt OneDrive d'un MP3 de 600 Ko par le connecteur n'est pas praticable ; envoyer avec --sans-audio "pièce jointe impossible avec Microsoft 365".
+- Pour la voix (si un jour un dépôt devient possible) : python3 -m pip install -q edge-tts puis scripts/synthese.py. Si ça
   échoue (réseau, module), le brief part en texte seul. Jamais `pip` seul.
 - Commit : git add state.json exports/ ; git commit ; git fetch origin main ; git
   rebase origin/main ; git checkout -B main ; git push origin main ; puis
