@@ -1,0 +1,668 @@
+<title>To-do Outlook</title>
+<style id="app-css">
+:root{
+  --bg:#faf9f7; --panel:#ffffff; --ink:#1c1b19; --ink-soft:#6b6862; --line:#e6e2db;
+  --accent:#3d6b45;
+  --haute:#b8342a; --moyenne:#a8620d; --basse:#1f7a4a;
+  --done:#9a968e; --warn-bg:#fdf3e7; --warn-ink:#8a4b12; --warn-line:#e8c9a0;
+  --voile:rgba(28,27,25,.32);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16161a; --panel:#1e1e23; --ink:#eceae6; --ink-soft:#9c988f; --line:#2e2e35;
+    --accent:#7fb389;
+    --haute:#f0907e; --moyenne:#e5a352; --basse:#68cf9a;
+    --done:#6b6862; --warn-bg:#2e2416; --warn-ink:#e8c9a0; --warn-line:#5a4526;
+    --voile:rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16161a; --panel:#1e1e23; --ink:#eceae6; --ink-soft:#9c988f; --line:#2e2e35;
+  --accent:#7fb389;
+  --haute:#f0907e; --moyenne:#e5a352; --basse:#68cf9a;
+  --done:#6b6862; --warn-bg:#2e2416; --warn-ink:#e8c9a0; --warn-line:#5a4526;
+  --voile:rgba(0,0,0,.55);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:32px 20px 96px}
+header{margin-bottom:22px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+.meta{color:var(--ink-soft);font-size:14px}
+.counts{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:14px}
+.counts b{font-size:22px;font-weight:650;display:block;line-height:1.2;
+  font-variant-numeric:tabular-nums}
+.counts .u b{color:var(--haute)}
+.stale{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);
+  border-radius:8px;padding:12px 14px;margin:16px 0;font-size:14px}
+
+/* Bandeau des échéances : un rappel, pas une seconde liste */
+.ech{border:1px solid var(--line);border-radius:9px;background:var(--panel);
+  padding:12px 14px;margin-bottom:18px}
+.ech h2{margin:0 0 8px}
+.ech ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.ech li{display:flex;gap:10px;align-items:baseline;font-size:14.5px;cursor:pointer}
+.ech li:hover span:last-child{color:var(--accent)}
+.quand{flex:0 0 auto;font-size:12px;font-weight:650;color:var(--ink-soft);
+  min-width:104px;font-variant-numeric:tabular-nums}
+.quand.chaud{color:var(--haute)}
+
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);
+  margin:0 0 10px;font-weight:650}
+
+/* Filtres par projet */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.chip{padding:4px 11px;border-radius:20px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink-soft);font:inherit;font-size:12.5px;
+  cursor:pointer;white-space:nowrap}
+.chip:hover{color:var(--ink)}
+.chip.on{border-color:var(--accent);color:var(--accent);font-weight:650}
+.chip .n{opacity:.65;font-variant-numeric:tabular-nums}
+
+ul{list-style:none;margin:0;padding:0}
+li.carte{display:flex;gap:11px;align-items:flex-start;background:var(--panel);
+  border:1px solid var(--line);border-left:4px solid var(--line);
+  border-radius:9px;padding:11px 13px;margin-bottom:7px}
+li.p-haute{border-left-color:var(--haute)}
+li.p-moyenne{border-left-color:var(--moyenne)}
+li.p-basse{border-left-color:var(--basse)}
+li.done{border-left-color:var(--line)}
+li.done .txt{color:var(--done);text-decoration:line-through}
+input[type=checkbox]{appearance:none;width:17px;height:17px;flex:0 0 auto;margin-top:3px;
+  border:1.5px solid var(--line);border-radius:5px;cursor:pointer;background:var(--bg)}
+input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:checked::after{content:"";display:block;width:4px;height:8px;
+  margin:2px auto 0;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
+/* Le texte de la carte ouvre le volet de détail : c'est la seule zone cliquable
+   qui ne soit pas un contrôle, d'où le curseur et le changement de couleur. */
+.txt{flex:1;min-width:0;cursor:pointer;border-radius:4px}
+.txt:hover .act,.txt:focus-visible .act{color:var(--accent)}
+.txt:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.act{font-weight:550;display:block}
+.sub{color:var(--ink-soft);font-size:13.5px;margin-top:2px;display:block}
+.tag{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;
+  padding:2px 7px;border-radius:20px;border:1px solid currentColor;white-space:nowrap;margin-top:3px}
+.haute{color:var(--haute)} .moyenne{color:var(--moyenne)} .basse{color:var(--basse)}
+.manuel{color:var(--accent)}
+
+/* Réglage de la priorité et du rang */
+.ctl{display:flex;gap:5px;align-items:flex-start;flex:0 0 auto;margin-left:auto}
+select.prio{font:inherit;font-size:11px;font-weight:650;text-transform:uppercase;
+  letter-spacing:.05em;padding:3px 22px 3px 8px;border-radius:20px;
+  border:1px solid currentColor;background:transparent;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+                   linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 12px) 8px,calc(100% - 8px) 8px;
+  background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+select.prio:disabled{cursor:default;opacity:.6;background-image:none;padding-right:8px}
+select.prio option{color:var(--ink);background:var(--panel);text-transform:none;
+  font-weight:400;letter-spacing:0}
+.mvcol{display:flex;flex-direction:column;gap:2px}
+.mv{width:24px;height:16px;padding:0;border:1px solid var(--line);border-radius:4px;
+  background:var(--panel);color:var(--ink-soft);cursor:pointer;font-size:9px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.mv:disabled{opacity:.25;cursor:default}
+.mv:not(:disabled):hover{color:var(--ink);border-color:var(--ink-soft)}
+select.prio:focus-visible,.mv:focus-visible,.chip:focus-visible,
+input[type=checkbox]:focus-visible,.addrow button:focus-visible,.btn:focus-visible,
+.fermer:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.addrow{display:flex;gap:8px;margin-top:12px}
+.addrow input[type=text]{flex:1;padding:10px 12px;border:1px solid var(--line);
+  border-radius:8px;background:var(--panel);color:var(--ink);font:inherit;font-size:14px}
+.addrow button,.btn{padding:10px 16px;border:1px solid var(--accent);background:var(--accent);
+  color:#fff;border-radius:8px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.addrow button:disabled,.btn:disabled{opacity:.5;cursor:default}
+.btn.sec{background:transparent;color:var(--accent)}
+details{margin-top:34px}
+summary{cursor:pointer;color:var(--ink-soft);font-size:14px}
+details li{opacity:.72}
+.ro{color:var(--ink-soft);font-size:13px;margin-top:10px;font-style:italic}
+.vide{color:var(--ink-soft);font-size:14px;font-style:italic;margin:14px 0}
+section{margin-top:26px}
+
+/* Volet de détail : d'où vient la tâche, ce qu'elle demande, et la synthèse */
+.voile{position:fixed;inset:0;background:var(--voile);z-index:40}
+.volet{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:-12px 0 32px rgba(0,0,0,.14);z-index:41;
+  overflow-y:auto;padding:22px 22px 44px;display:flex;flex-direction:column;gap:16px}
+.volet .sur{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;
+  color:var(--ink-soft);padding-right:40px}
+.volet h3{font-size:18px;line-height:1.3;margin:0;padding-right:36px;letter-spacing:-.005em}
+.fermer{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);font-size:20px;
+  line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.fermer:hover{color:var(--ink)}
+.fiche{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:0}
+.fiche dt{color:var(--ink-soft);white-space:nowrap}
+.fiche dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.bloc{border-top:1px solid var(--line);padding-top:14px}
+.bloc h2{margin:0 0 7px}
+.bloc p{margin:0 0 8px;font-size:14.5px}
+.bloc p:last-child{margin-bottom:0}
+.pasde{color:var(--ink-soft);font-style:italic}
+.note{font-size:13px;color:var(--ink-soft)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.prompt{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:560px){.wrap{padding:22px 14px 80px}h1{font-size:22px}
+  li.carte{flex-wrap:wrap}.txt{flex:1 1 auto}.ctl{margin-top:8px;margin-left:28px}
+  .quand{min-width:88px}
+  .volet{top:auto;width:100%;max-height:90vh;border-left:0;border-top:1px solid var(--line);
+    border-radius:14px 14px 0 0;padding:20px 16px 40px}}
+</style>
+
+<div class="wrap"><div id="root"></div></div>
+
+<script type="application/json" id="todo-state">
+{"version":1,"dernier_scan":"","fenetre_depuis":"","taches":[]}
+</script>
+
+<script id="app-js">
+(function(){
+  "use strict";
+  var STATE = JSON.parse(document.getElementById("todo-state").textContent);
+  var api = null, readonly = false;
+  var ORDRE = {haute:0, moyenne:1, basse:2};
+  var CLE_FILTRE = "todo-outlook:filtre";
+  var CLE_VOLET  = "todo-outlook:volet";
+  var FILTRE = lireFiltre();          // projet affiché, ou "" pour tout
+  var OUVERT = lireVolet();           // id de la tâche dont le volet est ouvert, ou ""
+
+  // Le filtre est un confort de lecture propre à chaque appareil : il vit dans le
+  // navigateur, jamais dans l'état publié, sinon il s'imposerait à tous les écrans.
+  function lireFiltre(){
+    try { return localStorage.getItem(CLE_FILTRE) || ""; } catch(e){ return ""; }
+  }
+  function ecrireFiltre(v){
+    try { v ? localStorage.setItem(CLE_FILTRE, v) : localStorage.removeItem(CLE_FILTRE); }
+    catch(e){}
+  }
+  // Le volet ouvert survit à la republication : chaque sauvegarde recharge la
+  // page, et sans cette trace le volet se refermerait sous le clic qui vient
+  // de demander une synthèse.
+  function lireVolet(){
+    try { return sessionStorage.getItem(CLE_VOLET) || ""; } catch(e){ return ""; }
+  }
+  function ecrireVolet(v){
+    try { v ? sessionStorage.setItem(CLE_VOLET, v) : sessionStorage.removeItem(CLE_VOLET); }
+    catch(e){}
+  }
+
+  function esc(s){ return String(s==null?"":s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+  function jours(iso){
+    if(!iso) return null;
+    var d = new Date(iso); if(isNaN(d)) return null;
+    return Math.floor((Date.now()-d.getTime())/86400000);
+  }
+
+  function frDate(iso){
+    if(!iso) return "jamais";
+    var d = new Date(iso); if(isNaN(d)) return iso;
+    return d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  }
+
+  // Date courte « 28 août » depuis un AAAA-MM-JJ ; sinon la valeur telle quelle.
+  function frCourt(iso){
+    if(!iso) return "";
+    var d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso+"T00:00:00" : iso);
+    if(isNaN(d)) return iso;
+    return d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+  }
+
+  function aujourdhui(){ return new Date().toISOString().slice(0,10); }
+
+  // Combien de jours nous séparent d'une échéance, en jours calendaires.
+  function dansCombien(iso){
+    var d = new Date(iso + "T00:00:00"); if(isNaN(d)) return null;
+    var a = new Date(); a.setHours(0,0,0,0);
+    return Math.round((d-a)/86400000);
+  }
+
+  function quand(iso){
+    var n = dansCombien(iso);
+    if(n===null) return {txt:iso, chaud:false};
+    if(n < 0)  return {txt:"en retard de "+(-n)+" j", chaud:true};
+    if(n === 0) return {txt:"aujourd'hui", chaud:true};
+    if(n === 1) return {txt:"demain", chaud:true};
+    if(n <= 7) return {txt:"dans "+n+" jours", chaud:n<=3};
+    return {txt:new Date(iso+"T00:00:00").toLocaleDateString("fr-FR",
+      {day:"numeric",month:"long"}), chaud:false};
+  }
+
+  function ouvertes(){ return STATE.taches.filter(function(t){return t.statut!=="fait";}); }
+  function faites(){ return STATE.taches.filter(function(t){return t.statut==="fait";}); }
+  function projet(t){ return (t.projet||"Divers").trim() || "Divers"; }
+  function bande(t){ var o = ORDRE[t.urgence]; return o==null ? 1 : o; }
+
+  // Priorité d'abord, puis le rang posé à la main, puis l'échéance, puis l'alphabet.
+  function comparer(a,b){
+    if(bande(a)!==bande(b)) return bande(a)-bande(b);
+    var ra = typeof a.rang==="number" ? a.rang : 1e9;
+    var rb = typeof b.rang==="number" ? b.rang : 1e9;
+    if(ra!==rb) return ra-rb;
+    var da = a.echeance||"9999-99-99", db = b.echeance||"9999-99-99";
+    if(da!==db) return da<db?-1:1;
+    return (a.action||"") < (b.action||"") ? -1 : 1;
+  }
+
+  function triees(){ return ouvertes().slice().sort(comparer); }
+  function visibles(){
+    var l = triees();
+    return FILTRE ? l.filter(function(t){ return projet(t)===FILTRE; }) : l;
+  }
+
+  function compteursProjets(){
+    var c = {};
+    ouvertes().forEach(function(t){ var k=projet(t); c[k]=(c[k]||0)+1; });
+    return Object.keys(c).map(function(k){ return {nom:k, n:c[k]}; })
+      .sort(function(a,b){
+        if((a.nom==="Divers")!==(b.nom==="Divers")) return a.nom==="Divers"?1:-1;
+        return b.n-a.n || (a.nom<b.nom?-1:1);
+      });
+  }
+
+  function ligne(t, premier, dernier){
+    var sub = [];
+    if(t.origine==="manuel") sub.push("ajout manuel");
+    sub.push(esc(projet(t)));
+    if(t.qui) sub.push(esc(t.qui));
+    if(t.date) sub.push(esc(t.date));
+    if(t.echeance) sub.push("échéance " + esc(quand(t.echeance).txt));
+    if(t.jira) sub.push(esc(t.jira) + (t.jira_statut ? " (" + esc(t.jira_statut) + ")" : ""));
+
+    var u = t.urgence||"moyenne", fait = t.statut==="fait";
+    var opts = ["haute","moyenne","basse"].map(function(v){
+      return '<option value="'+v+'"'+(v===u?" selected":"")+'>'+v+'</option>';
+    }).join("");
+
+    var ctl = "";
+    if(!fait){
+      ctl = '<span class="ctl">'
+        + '<select class="prio '+esc(u)+'" data-prio="'+esc(t.id)+'"'
+        + (readonly?" disabled":"")+' aria-label="Priorité">'+opts+'</select>'
+        + '<span class="mvcol">'
+        + '<button class="mv" data-mv="'+esc(t.id)+'" data-sens="-1"'
+        + (readonly||premier?" disabled":"")+' aria-label="Monter" title="Monter">&#9650;</button>'
+        + '<button class="mv" data-mv="'+esc(t.id)+'" data-sens="1"'
+        + (readonly||dernier?" disabled":"")+' aria-label="Descendre" title="Descendre">&#9660;</button>'
+        + '</span></span>';
+    }
+
+    return '<li class="carte '+(fait?"done":"p-"+esc(u))+'">'
+      + '<input type="checkbox" data-id="'+esc(t.id)+'"'+(fait?" checked":"")
+      + (readonly?" disabled":"")+' aria-label="Marquer comme fait">'
+      + '<span class="txt" data-open="'+esc(t.id)+'" role="button" tabindex="0"'
+      + ' title="Voir le détail"><span class="act">'+esc(t.action)+'</span>'
+      + (sub.length?'<span class="sub">'+sub.join(" · ")+'</span>':'')
+      + '</span>' + ctl + '</li>';
+  }
+
+  // Les flèches ne franchissent pas les bandes de priorité : on désactive celles
+  // des extrémités de chaque bande, dans la liste telle qu'elle est affichée.
+  function rendreListe(lst){
+    return lst.map(function(t,i){
+      var b = bande(t);
+      var premier = i===0 || bande(lst[i-1])!==b;
+      var dernier = i===lst.length-1 || bande(lst[i+1])!==b;
+      return ligne(t, premier, dernier);
+    }).join("");
+  }
+
+  // --- Volet de détail -------------------------------------------------------
+
+  function demandeur(t){
+    if(t.qui) return esc(t.qui);
+    if(t.origine==="manuel") return "toi-même (ajout manuel)";
+    if(t.origine==="reunion") return "relevé en réunion";
+    return "non précisé";
+  }
+
+  // Le fil du premier scan d'août est l'intitulé lui-même, tronqué : inutile de
+  // l'afficher deux fois.
+  function filUtile(t){
+    var f = (t.fil||"").trim();
+    return f && (t.action||"").indexOf(f) !== 0 ? f : "";
+  }
+
+  // La demande à coller dans Claude : le skill todo-outlook la reconnaît (mode
+  // « synthèse »), relit le fil complet et écrit la synthèse dans cette page.
+  function promptSynthese(t){
+    var f = filUtile(t);
+    return "Synthèse to-do : fais-moi la synthèse complète du dossier « " + t.action
+      + " » (tâche " + t.id + " de la to-do Outlook"
+      + (f ? ", fil « " + f + " »" : "")
+      + (t.qui ? ", avec " + t.qui : "") + ").";
+  }
+
+  function volet(t){
+    var u = t.urgence||"moyenne", fait = t.statut==="fait";
+    var anc = jours(t.ajoute_le), f = filUtile(t);
+    var h = '<div class="voile" data-fermer></div>'
+      + '<aside class="volet" role="dialog" aria-modal="true" aria-label="Détail de la tâche">'
+      + '<button class="fermer" data-fermer aria-label="Fermer">&times;</button>'
+      + '<div class="sur"><span class="tag '+esc(u)+'">'+esc(u)+'</span>'
+      + '<span>'+esc(projet(t))+'</span>'
+      + (t.origine==="manuel" ? '<span class="manuel">ajout manuel</span>' : '')
+      + '</div>'
+      + '<h3>'+esc(t.action)+'</h3>'
+      + '<dl class="fiche">'
+      + '<dt>Demandé par</dt><dd>'+demandeur(t)+'</dd>'
+      + (t.date ? '<dt>Dernier message</dt><dd>'+esc(t.date)+'</dd>' : '')
+      + (t.ajoute_le ? '<dt>Dans la liste</dt><dd>depuis le '+esc(frCourt(t.ajoute_le))
+          + (anc!=null && anc>0 ? ' ('+anc+' jour'+(anc>1?'s':'')+')' : '')+'</dd>' : '')
+      + (f ? '<dt>Fil</dt><dd>'+esc(f)+'</dd>' : '')
+      + (t.echeance ? '<dt>Échéance</dt><dd>'+esc(frCourt(t.echeance))+' · '
+          + esc(quand(t.echeance).txt)+'</dd>' : '')
+      + (t.jira ? '<dt>Jira</dt><dd>'+esc(t.jira)
+          + (t.jira_statut ? ' ('+esc(t.jira_statut)+')' : '')+'</dd>' : '')
+      + (fait ? '<dt>Fait</dt><dd>'+(t.ferme_le ? 'le '+esc(frCourt(t.ferme_le)) : '')
+          + (t.ferme_par==="scan" ? ', clôture détectée par le scan'
+             : t.ferme_par==="maxime" ? ', coché par toi' : '')+'</dd>' : '')
+      + '</dl>';
+
+    // Ce qu'on sait de la demande : le contexte posé par le scan, à défaut la
+    // note que porte déjà la tâche (ajout manuel, point de réunion).
+    h += '<div class="bloc"><h2>En quoi ça consiste</h2>';
+    if(t.contexte){
+      h += '<p>'+esc(t.contexte).replace(/\n/g,"<br>")+'</p>';
+    } else if(!fait && t.preuve){
+      h += '<p>'+esc(t.preuve).replace(/\n/g,"<br>")+'</p>';
+    } else {
+      h += '<p class="pasde">Le scan n\'a gardé que l\'intitulé. La synthèse ci-dessous '
+        + 'retrouvera le détail dans le fil.</p>';
+    }
+    h += '</div>';
+
+    if(fait && t.preuve){
+      h += '<div class="bloc"><h2>Preuve de clôture</h2><p>'+esc(t.preuve)+'</p></div>';
+    }
+
+    // La synthèse : ce que Claude a écrit, ou comment la lui demander.
+    var p = promptSynthese(t);
+    h += '<div class="bloc"><h2>Synthèse de Claude</h2>';
+    if(t.synthese){
+      h += '<p>'+esc(t.synthese).replace(/\n/g,"<br>")+'</p>'
+        + '<p class="note">Rédigée le '+esc(frCourt(t.synthese_le))+'.</p>';
+    }
+    if(t.synthese_demandee && !(t.synthese && t.synthese_le && t.synthese_le >= t.synthese_demandee)){
+      h += '<p class="note">'+(t.synthese ? 'Nouvelle synthèse' : 'Synthèse')
+        + ' demandée le '+esc(frCourt(t.synthese_demandee))+' : elle sera rédigée au '
+        + 'prochain scan du matin. Pour l\'avoir tout de suite, colle cette demande '
+        + 'dans Claude :</p>'
+        + '<pre class="prompt" id="prompt-txt">'+esc(p)+'</pre>'
+        + '<div class="actions"><button class="btn sec" id="btn-copier" data-txt="'+esc(p)+'">'
+        + 'Copier la demande</button></div>';
+    } else if(readonly){
+      h += '<p class="note">Lecture seule ici. Pour une synthèse, colle cette demande dans Claude :</p>'
+        + '<pre class="prompt" id="prompt-txt">'+esc(p)+'</pre>'
+        + '<div class="actions"><button class="btn sec" id="btn-copier" data-txt="'+esc(p)+'">'
+        + 'Copier la demande</button></div>';
+    } else {
+      if(!t.synthese){
+        h += '<p class="note">Claude relira le fil complet et résumera ici qui demande quoi, '
+          + 'depuis quand, et où ça en est.</p>';
+      }
+      h += '<div class="actions"><button class="btn'+(t.synthese?' sec':'')+'" id="btn-synth" '
+        + 'data-t="'+esc(t.id)+'">'+(t.synthese ? 'Redemander une synthèse' : 'Demander une synthèse à Claude')
+        + '</button></div>';
+    }
+    h += '</div></aside>';
+    return h;
+  }
+
+  function render(){
+    var age = jours(STATE.dernier_scan);
+    var o = ouvertes(), hautes = o.filter(function(t){return t.urgence==="haute";}).length;
+    var h = '<header><h1>To-do Outlook</h1>'
+      + '<div class="meta">Dernière mise à jour : ' + esc(frDate(STATE.dernier_scan))
+      + (age!=null ? ' · il y a ' + age + ' jour' + (age>1?"s":"") : "") + '</div>'
+      + '<div class="counts"><div><b>'+o.length+'</b>ouvertes</div>'
+      + '<div class="u"><b>'+hautes+'</b>urgentes</div>'
+      + '<div><b>'+faites().length+'</b>faites</div></div>';
+    if(age!=null && age>3){
+      h += '<div class="stale">Cette liste n\'a pas été rafraîchie depuis '+age
+        + ' jours. Le scan de 6h45 n\'a probablement pas tourné — à vérifier avant '
+        + 'de s\'y fier.</div>';
+    }
+    h += '</header>';
+
+    // Bandeau des échéances : ce qui a une date tombe avant ce qui n'en a pas.
+    var datees = o.filter(function(t){return t.echeance;})
+                  .sort(function(a,b){return a.echeance<b.echeance?-1:1;});
+    if(datees.length){
+      h += '<div class="ech"><h2>Échéances</h2><ol>'
+        + datees.map(function(t){
+            var q = quand(t.echeance);
+            return '<li data-open="'+esc(t.id)+'" role="button" tabindex="0">'
+              + '<span class="quand'+(q.chaud?" chaud":"")+'">'+esc(q.txt)+'</span>'
+              + '<span>'+esc(t.action)+'</span></li>';
+          }).join("")
+        + '</ol></div>';
+    }
+
+    // Filtres par projet
+    var projets = compteursProjets();
+    if(projets.length > 1){
+      h += '<div class="chips"><button class="chip'+(FILTRE?"":" on")+'" data-f="">'
+        + 'Tous <span class="n">'+o.length+'</span></button>'
+        + projets.map(function(p){
+            return '<button class="chip'+(FILTRE===p.nom?" on":"")+'" data-f="'+esc(p.nom)+'">'
+              + esc(p.nom)+' <span class="n">'+p.n+'</span></button>';
+          }).join("")
+        + '</div>';
+    }
+
+    var v = visibles();
+    if(!o.length){
+      h += '<p class="vide">Rien en attente. Profites-en.</p>';
+    } else if(!v.length){
+      h += '<p class="vide">Aucune tâche ouverte dans « '+esc(FILTRE)+' ».</p>';
+    } else {
+      h += '<ul>' + rendreListe(v) + '</ul>';
+    }
+
+    h += '<section><h2>Ajouter une tâche</h2><div class="addrow">'
+      + '<input type="text" id="add-input" placeholder="Ce que je dois faire…"'
+      + (readonly?" disabled":"") + '>'
+      + '<button id="add-btn"'+(readonly?" disabled":"")+'>Ajouter</button></div>'
+      + (readonly?'<p class="ro">Lecture seule : vos modifications ne seront pas enregistrées.</p>':'')
+      + '</section>';
+
+    var f = faites();
+    if(f.length){
+      h += '<details><summary>'+f.length+' tâche'+(f.length>1?"s":"")
+        + ' faite'+(f.length>1?"s":"")+'</summary><ul>'
+        + f.map(function(t){ return ligne(t,true,true); }).join("")+'</ul>'
+        + '<p class="ro">Les clôtures plus anciennes sortent d\'elles-mêmes de cette '
+        + 'liste — une semaine après une coche, un mois après une clôture automatique. '
+        + 'Elles restent dans les exports du dépôt.</p></details>';
+    }
+
+    if(OUVERT){
+      var ouverte = trouver(OUVERT);
+      if(ouverte) h += volet(ouverte);
+      else { OUVERT = ""; ecrireVolet(""); }
+    }
+    document.getElementById("root").innerHTML = h;
+    brancher();
+  }
+
+  function brancher(){
+    Array.prototype.forEach.call(
+      document.querySelectorAll('input[type=checkbox][data-id]'), function(cb){
+        cb.addEventListener("change", function(){ basculer(cb.getAttribute("data-id")); });
+      });
+    Array.prototype.forEach.call(
+      document.querySelectorAll('select[data-prio]'), function(sel){
+        sel.addEventListener("change", function(){
+          reprioriser(sel.getAttribute("data-prio"), sel.value);
+        });
+      });
+    Array.prototype.forEach.call(
+      document.querySelectorAll('button[data-mv]'), function(b){
+        b.addEventListener("click", function(){
+          deplacer(b.getAttribute("data-mv"), parseInt(b.getAttribute("data-sens"),10));
+        });
+      });
+    Array.prototype.forEach.call(
+      document.querySelectorAll('button[data-f]'), function(b){
+        b.addEventListener("click", function(){
+          FILTRE = b.getAttribute("data-f"); ecrireFiltre(FILTRE); render();
+        });
+      });
+    Array.prototype.forEach.call(
+      document.querySelectorAll('[data-open]'), function(el){
+        el.addEventListener("click", function(){ ouvrir(el.getAttribute("data-open")); });
+        el.addEventListener("keydown", function(e){
+          if(e.key==="Enter" || e.key===" "){ e.preventDefault(); ouvrir(el.getAttribute("data-open")); }
+        });
+      });
+    Array.prototype.forEach.call(
+      document.querySelectorAll('[data-fermer]'), function(el){
+        el.addEventListener("click", fermer);
+      });
+    var bs = document.getElementById("btn-synth");
+    if(bs) bs.addEventListener("click", function(){ demanderSynthese(bs.getAttribute("data-t")); });
+    var bc = document.getElementById("btn-copier");
+    if(bc) bc.addEventListener("click", function(){ copier(bc.getAttribute("data-txt"), bc); });
+    var btn = document.getElementById("add-btn"), inp = document.getElementById("add-input");
+    if(btn) btn.addEventListener("click", ajouter);
+    if(inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter") ajouter(); });
+  }
+
+  function trouver(id){
+    return STATE.taches.filter(function(x){return x.id===id;})[0];
+  }
+
+  function ouvrir(id){
+    if(!trouver(id)) return;
+    OUVERT = id; ecrireVolet(id); render();
+    var f = document.querySelector(".volet .fermer");
+    if(f) f.focus();
+  }
+
+  function fermer(){
+    OUVERT = ""; ecrireVolet(""); render();
+  }
+
+  // Demander une synthèse : on pose la date dans l'état et on republie. La routine
+  // du matin voit le champ et rédige ; en attendant, le volet affiche la demande à
+  // coller dans Claude pour l'obtenir tout de suite.
+  function demanderSynthese(id){
+    var t = trouver(id);
+    if(!t) return;
+    t.synthese_demandee = aujourdhui();
+    render(); sauver();
+  }
+
+  function copier(txt, btn){
+    var fini = function(){
+      var o = btn.textContent; btn.textContent = "Copié";
+      setTimeout(function(){ btn.textContent = o; }, 1600);
+    };
+    var selection = function(){
+      var pre = document.getElementById("prompt-txt"); if(!pre) return;
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { if(document.execCommand("copy")) fini(); } catch(e){}
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(fini, selection);
+    } else selection();
+  }
+
+  function basculer(id){
+    var t = trouver(id);
+    if(!t) return;
+    if(t.statut==="fait"){ t.statut="ouvert"; t.ferme_par=null; t.ferme_le=null; }
+    else { t.statut="fait"; t.ferme_par="maxime"; t.ferme_le=aujourdhui(); }
+    render(); sauver();
+  }
+
+  // Changer la priorité à la main. urgence_manuelle empêche le scan du matin
+  // d'écraser ce choix — c'est le pendant de ferme_par "maxime" sur les clôtures.
+  function reprioriser(id, valeur){
+    var t = trouver(id);
+    if(!t || t.urgence===valeur) return;
+    t.urgence = valeur;
+    t.urgence_manuelle = true;
+    t.rang = null;              // la tâche rejoint le bas de sa nouvelle bande
+    render(); sauver();
+  }
+
+  // Monter ou descendre d'un cran, à l'intérieur de la bande de priorité.
+  // On numérote d'abord toute la bande, puis on échange les rangs des deux tâches
+  // VISIBLES : sous filtre, le déplacement reste celui que l'œil observe, et les
+  // tâches masquées gardent leur position relative.
+  function deplacer(id, sens){
+    var t = trouver(id);
+    if(!t) return;
+    var b = bande(t);
+    triees().filter(function(x){ return bande(x)===b; })
+            .forEach(function(x,n){ x.rang = n; });
+    var vus = visibles().filter(function(x){ return bande(x)===b; });
+    var i = vus.indexOf(t), j = i + sens;
+    if(i<0 || j<0 || j>=vus.length) return;
+    var tmp = t.rang; t.rang = vus[j].rang; vus[j].rang = tmp;
+    render(); sauver();
+  }
+
+  function ajouter(){
+    var inp = document.getElementById("add-input");
+    var v = inp && inp.value.trim();
+    if(!v) return;
+    STATE.taches.unshift({
+      id: "man-" + Date.now().toString(36),
+      action: v, qui: "", date: aujourdhui(),
+      projet: FILTRE || "Divers", urgence: "moyenne", fil: "", id_fil: "",
+      origine: "manuel", statut: "ouvert", echeance: null,
+      urgence_manuelle: false, rang: null,
+      ajoute_le: aujourdhui(),
+      ferme_par: null, ferme_le: null, preuve: null,
+      contexte: null, synthese: null, synthese_le: null, synthese_demandee: null
+    });
+    inp.value = "";
+    render(); sauver();
+  }
+
+  var enCours = false, enAttente = false;
+  function sauver(){
+    if(!api || readonly) return;
+    if(enCours){ enAttente = true; return; }
+    enCours = true;
+    api.publish(document4(STATE)).then(function(){
+      enCours = false;
+      if(enAttente){ enAttente = false; sauver(); }
+    }, function(){ enCours = false; });
+  }
+
+  function document4(state){
+    var css = document.getElementById("app-css").textContent;
+    var js  = document.getElementById("app-js").textContent;
+    var json = JSON.stringify(state, null, 1).replace(/<\//g, "<\\/");
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<title>To-do Outlook</title><style id="app-css">' + css + '</style></head><body>'
+      + '<div class="wrap"><div id="root"></div></div>'
+      + '<script type="application/json" id="todo-state">' + json + '<\/script>'
+      + '<script id="app-js">' + js + '<\/script></body></html>';
+  }
+
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && OUVERT) fermer(); });
+
+  render();
+  if(window.claude && window.claude.use){
+    window.claude.use("artifact").then(function(ns){
+      api = ns; readonly = !ns; render();
+    }, function(){ readonly = true; render(); });
+  } else { readonly = true; render(); }
+})();
+</script>
