@@ -204,9 +204,12 @@ comme en mode 5. Huit au plus par exécution, les plus anciennes demandes d'abor
 `python3 matin-connecteur/scripts/purger_etat.py --state state.json`, puis relire :
 c'est cet état qu'on publie et que le brief lit. Jamais de purge à la main.
 
-**A9. Publier.** Republier la page à la **même URL** (paramètre `url`), à partir de
-`assets/page-template.html` en remplaçant le seul bloc `todo-state`. Conflit : relire,
-refusionner, republier ; ne jamais forcer. Jamais un second artefact.
+**A9. Publier.** Les jours avec brief, publier **après B5** (pour que l'état porte le
+champ `audio`) ; sinon tout de suite. Relire la page juste avant (cases cochées, tâches
+ajoutées à la main), puis republier à la **même URL** (paramètre `url`), à partir de
+`assets/page-template.html` en remplaçant le seul bloc `todo-state`. Ne jamais passer
+`capabilities` : la déclaration `artifact` + `assets` est reportée d'elle-même.
+Conflit : relire, refusionner, republier ; ne jamais forcer. Jamais un second artefact.
 
 ### Partie B : le brief
 
@@ -231,6 +234,19 @@ calme). Trois recherches complémentaires au plus.
 brief/brief.mp3`. Échec (réseau fermé, module absent) : le brief part en texte,
 raison gardée pour `--sans-audio`.
 
+**B5. Déposer le vocal sur la page** (Microsoft 365 refuse les pièces jointes ; la page
+accepte le MP4, pas le MP3). Convertir :
+`ffmpeg -loglevel error -y -i brief/brief.mp3 -c:a aac -b:a 64k -movflags +faststart
+brief/brief-AAAA-MM-JJ.mp4` (sans ffmpeg : `python3 -m pip install -q imageio-ffmpeg`
+puis le binaire de `imageio_ffmpeg.get_ffmpeg_exe()`). Puis outil Artifact, `publish`
+avec `url` de la page, `asset: true`, `file_path` = ce MP4 : le résultat donne
+`/_blob/<id>`. Écrire dans l'état `"audio": {"url": "/_blob/<id>", "id": "<id>",
+"jour": "AAAA-MM-JJ", "duree_s": <n>}` (la page affiche un lecteur en tête). Après la
+publication de la page (A9), supprimer l'ancien vocal : outil Artifact, `delete` avec
+`url` de la page et `path` = l'`id` de l'ancien champ `audio` lu sur la page, s'il
+diffère du nouveau. C'est la seule suppression autorisée. Échec du dépôt : pas de
+champ `audio` nouveau, `--sans-audio "<raison>"`.
+
 ### Partie C : le mail
 
 **C1. Composer**, jamais rédiger :
@@ -238,7 +254,8 @@ raison gardée pour `--sans-audio`.
 ```bash
 python3 matin-connecteur/scripts/composer_mail.py --state state.json --artefact-url "<URL>" \
     --texte brief/script.txt --agenda brief/agenda.json --mp3 brief/brief.mp3
-# sans vocal possible : --lien-audio "<URL OneDrive>" ou --sans-audio "<raison>"
+# vocal déposé sur la page (B5) : --lien-audio "<URL de la page>" à la place de --mp3
+# sans vocal possible : --sans-audio "<raison>"
 # sans brief :          --sans-brief "<raison>"
 # scan en échec :       --echec "<étape et erreur en une phrase>"
 ```

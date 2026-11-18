@@ -43,9 +43,13 @@ RAPPELS QUI NE SE DEVINENT PAS
 - Le mail est composé par python3 matin-connecteur/scripts/composer_mail.py, jamais
   rédigé à la main, et envoyé par l'opération m_envoyer de l'adaptateur. Si l'outil
   d'envoi manque, brouillon si possible, sinon rien : la page fait foi.
-- Vocal : Microsoft 365 n'accepte aucune pièce jointe et le dépôt OneDrive d'un MP3 de 600 Ko par le connecteur n'est pas praticable ; envoyer avec --sans-audio "pièce jointe impossible avec Microsoft 365".
-- Pour la voix (si un jour un dépôt devient possible) : python3 -m pip install -q edge-tts puis scripts/synthese.py. Si ça
-  échoue (réseau, module), le brief part en texte seul. Jamais `pip` seul.
+- Vocal, les jours avec brief : python3 -m pip install -q edge-tts, puis
+  scripts/synthese.py (jamais `pip` seul) ; convertir en MP4 audio (ffmpeg) et le
+  déposer sur la page avec l'outil Artifact (asset: true), champ `audio` dans l'état,
+  page publiée après ce dépôt, ancien vocal supprimé ensuite : SKILL.md, B5. Mail avec
+  --lien-audio "https://claude.ai/artifact/SQnb6Pjy5GfTouu1e3Zxy1". Échec à une étape :
+  --sans-audio "<étape et raison>", le mail part quand même.
+- Ne passe jamais `capabilities` en republiant la page : la déclaration est reportée.
 - Commit : git add state.json exports/ ; git commit ; git fetch origin main ; git
   rebase origin/main ; git checkout -B main ; git push origin main ; puis
   git log origin/main -1 --oneline doit montrer ton commit. Ne committe jamais scan/
