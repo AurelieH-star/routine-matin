@@ -1,7 +1,7 @@
 {
  "version": 1,
- "dernier_scan": "2026-11-22T06:25:00Z",
- "fenetre_depuis": "2026-11-19",
+ "dernier_scan": "2026-11-23T06:30:00Z",
+ "fenetre_depuis": "2026-11-20",
  "fournisseur": "m365",
  "boite": "aurelie.hennetier@procivis.fr",
  "taches": [
@@ -790,9 +790,9 @@
  ],
  "clos": [],
  "audio": {
-  "url": "/_blob/31654e8902658af13e52b69f8ca60526",
-  "id": "31654e8902658af13e52b69f8ca60526",
-  "jour": "2026-11-20",
-  "duree_s": 118
+  "url": "/_blob/5e85cc2e188c40e71a6e3ae8eeec3109",
+  "id": "5e85cc2e188c40e71a6e3ae8eeec3109",
+  "jour": "2026-11-23",
+  "duree_s": 115
  }
 }
